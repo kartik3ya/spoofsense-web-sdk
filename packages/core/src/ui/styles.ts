@@ -47,41 +47,23 @@ export const STYLES = /* css */ `
 }
 .oval.ready { border-color: var(--ss-accent); }
 
-/* Big 3→2→1 capture countdown, centered in the oval. */
-.countdown {
-  position: absolute; top: 44%; left: 50%; transform: translate(-50%, -50%);
-  font-size: 96px; font-weight: 800; color: #fff; line-height: 1;
-  text-shadow: 0 4px 24px rgba(0,0,0,.55); pointer-events: none;
-  font-variant-numeric: tabular-nums;
-}
-.countdown[hidden] { display: none; }
-.countdown.pop { animation: cd-pop .5s ease-out; }
-@keyframes cd-pop {
-  0% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
-  35% { opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: .95; }
-}
-
+/* One instruction at a time, never over the face: a single pill anchored
+   near the bottom of the stage carries the current hint OR the countdown. */
 .hint {
-  position: absolute; left: 50%; bottom: 132px; transform: translateX(-50%);
-  background: rgba(0,0,0,.55); padding: 9px 16px; border-radius: 999px;
+  position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%);
+  background: rgba(0,0,0,.6); padding: 10px 18px; border-radius: 999px;
   font-size: 14px; font-weight: 500; white-space: nowrap; backdrop-filter: blur(6px);
+  font-variant-numeric: tabular-nums; transition: background-color .2s ease;
 }
-
-.checks {
-  position: absolute; left: 50%; top: 14px; transform: translateX(-50%);
-  display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 92%;
+.hint.counting { background: rgba(37,211,102,.28); }
+.hint.pop { animation: hint-pop .35s ease-out; }
+@keyframes hint-pop {
+  0% { transform: translateX(-50%) scale(1.12); }
+  100% { transform: translateX(-50%) scale(1); }
 }
-.chip {
-  font-size: 11px; padding: 4px 9px; border-radius: 999px;
-  background: rgba(255,255,255,.1); color: rgba(255,255,255,.7);
-  display: inline-flex; align-items: center; gap: 5px; transition: all .2s ease;
-}
-.chip.ok { background: rgba(37,211,102,.18); color: #b9f6ca; }
-.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .8; }
 
 .footer {
-  width: 100%; padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  width: 100%; padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .shutter {
@@ -92,7 +74,6 @@ export const STYLES = /* css */ `
 }
 .shutter:active { transform: scale(.94); }
 .shutter:disabled { opacity: .35; cursor: not-allowed; }
-.footnote { font-size: 11px; opacity: .5; text-align: center; max-width: 320px; }
 
 /* Status panel (loading / verifying / error / result). */
 .panel {

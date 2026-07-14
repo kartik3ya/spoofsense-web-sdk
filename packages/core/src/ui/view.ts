@@ -31,12 +31,10 @@ export class CaptureView {
   private root: ShadowRoot;
   private video!: HTMLVideoElement;
   private oval!: HTMLDivElement;
-  private countdownEl!: HTMLDivElement;
   private hintEl!: HTMLDivElement;
-  private checksEl!: HTMLDivElement;
-  private shutter!: HTMLButtonElement;
+  private shutter: HTMLButtonElement | null = null;
   private panel!: HTMLDivElement;
-  private footer!: HTMLDivElement;
+  private footer: HTMLDivElement | null = null;
   private readonly inline: boolean;
 
   constructor(
@@ -77,15 +75,10 @@ export class CaptureView {
         <div class="stage">
           <video class="video" autoplay playsinline muted></video>
           <div class="oval"></div>
-          <div class="countdown" hidden></div>
-          <div class="checks"></div>
           <div class="hint">Starting camera…</div>
           <div class="panel"></div>
         </div>
-        <div class="footer">
-          ${showShutter ? `<button class="shutter" disabled aria-label="Capture"></button>` : ""}
-          <div class="footnote">Keep your face inside the oval. Your selfie is captured from the live camera only.</div>
-        </div>
+        ${showShutter ? `<div class="footer"><button class="shutter" disabled aria-label="Capture"></button></div>` : ""}
       </div>
     `;
   }
@@ -94,9 +87,7 @@ export class CaptureView {
     const q = <T extends Element>(sel: string) => this.root.querySelector(sel) as T;
     this.video = q<HTMLVideoElement>(".video");
     this.oval = q<HTMLDivElement>(".oval");
-    this.countdownEl = q<HTMLDivElement>(".countdown");
     this.hintEl = q<HTMLDivElement>(".hint");
-    this.checksEl = q<HTMLDivElement>(".checks");
     this.panel = q<HTMLDivElement>(".panel");
     this.footer = q<HTMLDivElement>(".footer");
     this.shutter = q<HTMLButtonElement>(".shutter");
@@ -129,45 +120,40 @@ export class CaptureView {
     };
   }
 
-  /** Push live pre-check state into the ring, hint, and chips. */
+  private countdown: number | null = null;
+
+  /**
+   * Push live pre-check state into the ring and the hint pill. One instruction
+   * at a time: while the capture countdown runs it owns the pill; otherwise the
+   * pill shows the current blocker (or a "hold still" nudge when all green).
+   */
   update(state: PrecheckState): void {
     this.oval.classList.toggle("ready", state.ready);
-    this.hintEl.textContent = state.hint;
     if (this.shutter) this.shutter.disabled = !state.ready;
-
-    // Render chips (cheap; few items).
-    this.checksEl.innerHTML = state.items
-      .map(
-        (i) =>
-          `<span class="chip ${i.ok ? "ok" : ""}"><span class="dot"></span>${escapeHtml(i.label)}</span>`,
-      )
-      .join("");
+    if (this.countdown === null) this.hintEl.textContent = state.hint;
   }
 
   setHint(text: string): void {
+    this.countdown = null;
     this.hintEl.textContent = text;
   }
 
-  /** Show the 3→2→1 capture countdown, or pass null to hide it. */
+  /** Show the capture countdown in the pill, or pass null to release it. */
   setCountdown(n: number | null): void {
-    if (n === null) {
-      this.countdownEl.hidden = true;
-      return;
-    }
-    const text = String(n);
-    // Re-trigger the pop animation only when the number actually changes.
-    if (this.countdownEl.textContent !== text || this.countdownEl.hidden) {
-      this.countdownEl.textContent = text;
-      this.countdownEl.hidden = false;
-      this.countdownEl.classList.remove("pop");
-      void this.countdownEl.offsetWidth; // force reflow so the animation restarts
-      this.countdownEl.classList.add("pop");
-    }
+    const changed = n !== this.countdown;
+    this.countdown = n;
+    this.hintEl.classList.toggle("counting", n !== null);
+    if (n === null || !changed) return;
+    this.hintEl.textContent = `Hold still — ${n}`;
+    // Re-trigger the pop only when the number actually changes.
+    this.hintEl.classList.remove("pop");
+    void this.hintEl.offsetWidth; // force reflow so the animation restarts
+    this.hintEl.classList.add("pop");
   }
 
   /** Show a status panel (loading / verifying / error / done). */
   showPanel(opts: PanelOpts): void {
-    this.footer.style.visibility = "hidden";
+    if (this.footer) this.footer.style.visibility = "hidden";
     this.panel.classList.add("show");
     this.panel.innerHTML = `
       ${opts.spinner ? `<div class="spinner"></div>` : ""}
@@ -186,7 +172,7 @@ export class CaptureView {
   hidePanel(): void {
     this.panel.classList.remove("show");
     this.panel.innerHTML = "";
-    this.footer.style.visibility = "visible";
+    if (this.footer) this.footer.style.visibility = "visible";
   }
 
   destroy(): void {
