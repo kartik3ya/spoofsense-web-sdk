@@ -1,0 +1,39 @@
+{
+  "name": "@spoofsense/web-sdk",
+  "version": "0.1.0",
+  "description": "SpoofSense Web SDK: selfie capture UI with in-browser prechecks, injection-attack signals, and verification-session submission (liveness + deepfake).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "unpkg": "./dist/index.global.js",
+  "jsdelivr": "./dist/index.global.js",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "spoofsense",
+    "face-liveness",
+    "deepfake-detection",
+    "identity-verification",
+    "anti-spoofing"
+  ],
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}

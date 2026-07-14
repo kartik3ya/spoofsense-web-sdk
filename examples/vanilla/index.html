@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SpoofSense Web SDK — example</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 32px; background: #f5f6f8; color: #16181d; }
+    .wrap { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    h1 { font-size: 18px; margin: 0; }
+    #verify { width: 100%; aspect-ratio: 3 / 4; border-radius: 16px; overflow: hidden; background: #0b0d12; }
+    #log { font: 12px/1.6 ui-monospace, monospace; background: #fff; border: 1px solid #e3e5ea; border-radius: 10px; padding: 12px; white-space: pre-wrap; min-height: 80px; }
+    button { align-self: flex-start; padding: 10px 18px; border: 0; border-radius: 10px; background: #16181d; color: #fff; font-weight: 600; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>SpoofSense Web SDK — vanilla example</h1>
+    <button id="start">Start verification</button>
+    <div id="verify"></div>
+    <div id="log">Click “Start verification”. Add ?fake=1 to simulate the camera with a test image.</div>
+  </div>
+
+  <script src="/dist/index.global.js"></script>
+  <script>
+    const logEl = document.getElementById("log");
+    const log = (...a) => { logEl.textContent += "\n" + a.join(" "); console.log(...a); };
+
+    // ?fake=1 — replace the camera with a canvas stream drawing test-face.jpg.
+    // Lets the full capture→submit→result loop run headlessly (CI, no webcam).
+    const params = new URLSearchParams(location.search);
+    if (params.get("fake")) {
+      const zoom = Number(params.get("zoom")) || 1;
+      const img = new Image();
+      img.src = "/test-face.jpg";
+      navigator.mediaDevices.getUserMedia = async () => {
+        await img.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = 720; canvas.height = 960;
+        const ctx = canvas.getContext("2d");
+        const draw = () => {
+          // Cover-fit the test face into the frame, mirrored like a selfie cam.
+          const s = Math.max(canvas.width / img.width, canvas.height / img.height) * zoom;
+          const w = img.width * s, h = img.height * s;
+          ctx.save();
+          ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+          ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+          ctx.restore();
+        };
+        // Interval (not rAF): rAF pauses in unfocused tabs, which would starve
+        // the stream of frames and hang video.play().
+        draw();
+        setInterval(draw, 100);
+        return canvas.captureStream(30);
+      };
+      log("fake camera enabled (test-face.jpg)");
+    }
+
+    document.getElementById("start").addEventListener("click", async () => {
+      const r = await fetch("/session", { method: "POST" });
+      const { clientToken, sessionId, error } = await r.json();
+      if (error) return log("session mint failed:", JSON.stringify(error));
+      log("session:", sessionId);
+
+      const prechecks = {};
+      if (params.get("minSharp")) prechecks.minSharpness = Number(params.get("minSharp"));
+      if (params.get("countdown")) prechecks.countdownSeconds = Number(params.get("countdown"));
+
+      window.ssHandle = SpoofSense.mount({
+        sessionToken: clientToken,
+        container: "#verify",
+        apiBase: window.SPOOFSENSE_API_BASE ?? "http://127.0.0.1:8055",
+        theme: { radius: "16px" },
+        prechecks,
+        autoCapture: !params.get("manual"),
+        onEvent: (e) => log("event:", e.type),
+        onComplete: async ({ verificationSessionId }) => {
+          log("complete:", verificationSessionId);
+          const res = await fetch(`/result?id=${verificationSessionId}`);
+          const result = await res.json();
+          log("backend result:", JSON.stringify({ status: result.status, decision: result.decision, risk: result.risk }, null, 2));
+        },
+        onError: (e) => log("error:", e.code, "-", e.message, "(recoverable:", e.recoverable + ")"),
+        onCancel: () => log("cancelled"),
+      });
+    });
+  </script>
+</body>
+</html>
