@@ -69,7 +69,8 @@
       window.ssHandle = SpoofSense.mount({
         sessionToken: clientToken,
         container: "#verify",
-        apiBase: window.SPOOFSENSE_API_BASE ?? "http://127.0.0.1:8055",
+        // Default to production; pass ?api=http://127.0.0.1:8055 for a local API.
+        apiBase: params.get("api") ?? "https://api.spoofsense.ai",
         theme: { radius: "16px" },
         prechecks,
         autoCapture: !params.get("manual"),
