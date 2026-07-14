@@ -18,7 +18,7 @@
     <h1>SpoofSense Web SDK — vanilla example</h1>
     <button id="start">Start verification</button>
     <div id="verify"></div>
-    <div id="log">Click “Start verification”. Add ?fake=1 to simulate the camera with a test image.</div>
+    <div id="log">Click “Start verification”. Add ?fake=1 to simulate the camera with a test image (drop one at examples/vanilla/test-face.jpg, or pass ?img=&lt;url&gt;).</div>
   </div>
 
   <script src="/dist/index.global.js"></script>
@@ -26,13 +26,16 @@
     const logEl = document.getElementById("log");
     const log = (...a) => { logEl.textContent += "\n" + a.join(" "); console.log(...a); };
 
-    // ?fake=1 — replace the camera with a canvas stream drawing test-face.jpg.
+    // ?fake=1 — replace the camera with a canvas stream drawing a face image.
     // Lets the full capture→submit→result loop run headlessly (CI, no webcam).
+    // Supply your own image: drop it at examples/vanilla/test-face.jpg
+    // (gitignored — never commit a real person's face) or pass ?img=<url>.
     const params = new URLSearchParams(location.search);
     if (params.get("fake")) {
       const zoom = Number(params.get("zoom")) || 1;
       const img = new Image();
-      img.src = "/test-face.jpg";
+      img.crossOrigin = "anonymous";
+      img.src = params.get("img") || "/test-face.jpg";
       navigator.mediaDevices.getUserMedia = async () => {
         await img.decode();
         const canvas = document.createElement("canvas");

@@ -2,3 +2,5 @@ node_modules/
 dist/
 *.log
 .DS_Store
+# Local test asset for the ?fake=1 harness — never commit a real person's face.
+examples/vanilla/test-face.jpg

@@ -99,6 +99,7 @@ npm run typecheck
 
 # e2e example (uses a local or deployed SpoofSense API):
 SPOOFSENSE_API_KEY=sk_live_… SPOOFSENSE_API_BASE=https://api.spoofsense.ai npm run example
-# open http://localhost:8787 — add ?fake=1&zoom=1.4 to simulate the camera,
+# open http://localhost:8787 — add ?fake=1&zoom=1.4 to simulate the camera
+# (drop a selfie at examples/vanilla/test-face.jpg [gitignored] or pass ?img=<url>),
 # &manual=1 for the shutter button, &minSharp=1&countdown=1 to relax prechecks.
 ```
